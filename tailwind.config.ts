@@ -47,6 +47,18 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        success: {
+          DEFAULT: "hsl(var(--success))",
+          foreground: "hsl(var(--success-foreground))",
+        },
+        addition: {
+          DEFAULT: "hsl(var(--addition))",
+          border: "hsl(var(--addition-border))",
+        },
+        deletion: {
+          DEFAULT: "hsl(var(--deletion))",
+          border: "hsl(var(--deletion-border))",
+        },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
