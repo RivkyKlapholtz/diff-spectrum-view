@@ -1,7 +1,16 @@
 import { useDiffsByCategory } from "@/hooks/useDiffs";
-import { DiffCard } from "./DiffCard";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { AlertCircle, CheckCircle, XCircle, Clock } from "lucide-react";
+import { format } from "date-fns";
 
 interface DiffListProps {
   category: string | null;
@@ -58,6 +67,24 @@ export function DiffList({ category, onDiffSelect }: DiffListProps) {
     );
   }
 
+  const statusConfig = {
+    completed: {
+      icon: CheckCircle,
+      variant: "default" as const,
+      label: "Completed",
+    },
+    failed: {
+      icon: XCircle,
+      variant: "destructive" as const,
+      label: "Failed",
+    },
+    pending: {
+      icon: AlertCircle,
+      variant: "secondary" as const,
+      label: "Pending",
+    },
+  };
+
   return (
     <div className="p-6 space-y-4">
       <div>
@@ -68,10 +95,67 @@ export function DiffList({ category, onDiffSelect }: DiffListProps) {
           {diffs.length} diff{diffs.length !== 1 ? "s" : ""} found
         </p>
       </div>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {diffs.map((diff) => (
-          <DiffCard key={diff.id} diff={diff} onClick={() => onDiffSelect(diff.id)} />
-        ))}
+
+      <div className="rounded-lg border bg-card">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Status</TableHead>
+              <TableHead>Job Name</TableHead>
+              <TableHead>Job ID</TableHead>
+              <TableHead>Endpoint</TableHead>
+              <TableHead>Method</TableHead>
+              <TableHead>Timestamp</TableHead>
+              <TableHead className="text-right">Duration</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {diffs.map((diff) => {
+              const config = statusConfig[diff.status];
+              const StatusIcon = config.icon;
+
+              return (
+                <TableRow
+                  key={diff.id}
+                  className="cursor-pointer hover:bg-muted/50"
+                  onClick={() => onDiffSelect(diff.id)}
+                >
+                  <TableCell>
+                    <Badge variant={config.variant} className="gap-1">
+                      <StatusIcon className="h-3 w-3" />
+                      {config.label}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="font-medium">{diff.jobName}</TableCell>
+                  <TableCell className="font-mono text-xs text-muted-foreground">
+                    {diff.jobId}
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground max-w-xs truncate">
+                    {diff.metadata?.endpoint || "-"}
+                  </TableCell>
+                  <TableCell>
+                    {diff.metadata?.method ? (
+                      <Badge variant="outline" className="font-mono text-xs">
+                        {diff.metadata.method}
+                      </Badge>
+                    ) : (
+                      "-"
+                    )}
+                  </TableCell>
+                  <TableCell className="text-sm">
+                    <div className="flex items-center gap-1.5 text-muted-foreground">
+                      <Clock className="h-3.5 w-3.5" />
+                      {format(new Date(diff.timestamp), "MMM d, h:mm a")}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-right text-sm text-muted-foreground">
+                    {diff.metadata?.duration ? `${diff.metadata.duration}ms` : "-"}
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
       </div>
     </div>
   );
