@@ -216,14 +216,32 @@ export function DiffList({ category, onDiffSelect }: DiffListProps) {
               {selectedCurl}
             </pre>
           </div>
-          <Button
-            variant="outline"
-            onClick={() => {
-              navigator.clipboard.writeText(selectedCurl || "");
-            }}
-          >
-            Copy to Clipboard
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                navigator.clipboard.writeText(selectedCurl || "");
+              }}
+            >
+              Copy to Clipboard
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                const blob = new Blob([selectedCurl || ""], { type: "text/plain" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = "curl-request.sh";
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+              }}
+            >
+              Download as File
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

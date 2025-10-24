@@ -2,7 +2,7 @@ import { DiffItem, DiffStats } from "@/types/diff";
 import { mockDiffStats, mockData } from "./mockData";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api";
-const USE_MOCK_DATA = true; // Set to false when backend is ready
+const USE_MOCK_DATA = true; // Set to false and configure VITE_API_BASE_URL to connect to your Hangfire backend
 
 export const api = {
   async getDiffStats(): Promise<DiffStats> {

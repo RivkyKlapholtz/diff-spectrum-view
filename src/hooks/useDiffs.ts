@@ -5,6 +5,7 @@ export function useDiffStats() {
   return useQuery({
     queryKey: ["diff-stats"],
     queryFn: api.getDiffStats,
+    refetchInterval: 5000, // Refetch every 5 seconds for live updates
   });
 }
 
@@ -13,6 +14,7 @@ export function useDiffsByCategory(category: string | null) {
     queryKey: ["diffs", category],
     queryFn: () => (category ? api.getDiffsByCategory(category) : Promise.resolve([])),
     enabled: !!category,
+    refetchInterval: 5000, // Refetch every 5 seconds for live updates
   });
 }
 
