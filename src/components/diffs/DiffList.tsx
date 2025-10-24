@@ -1,6 +1,15 @@
+import { useState } from "react";
 import { useDiffsByCategory } from "@/hooks/useDiffs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Table,
   TableBody,
@@ -9,7 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { AlertCircle, CheckCircle, XCircle, Clock } from "lucide-react";
+import { AlertCircle, CheckCircle, XCircle, Clock, Code } from "lucide-react";
 import { format } from "date-fns";
 
 interface DiffListProps {
@@ -19,6 +28,7 @@ interface DiffListProps {
 
 export function DiffList({ category, onDiffSelect }: DiffListProps) {
   const { data: diffs, isLoading, error } = useDiffsByCategory(category);
+  const [selectedCurl, setSelectedCurl] = useState<string | null>(null);
 
   if (!category) {
     return (
@@ -107,6 +117,7 @@ export function DiffList({ category, onDiffSelect }: DiffListProps) {
               <TableHead>Method</TableHead>
               <TableHead>Timestamp</TableHead>
               <TableHead className="text-right">Duration</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -115,25 +126,38 @@ export function DiffList({ category, onDiffSelect }: DiffListProps) {
               const StatusIcon = config.icon;
 
               return (
-                <TableRow
-                  key={diff.id}
-                  className="cursor-pointer hover:bg-muted/50"
-                  onClick={() => onDiffSelect(diff.id)}
-                >
-                  <TableCell>
+                <TableRow key={diff.id} className="hover:bg-muted/50">
+                  <TableCell
+                    className="cursor-pointer"
+                    onClick={() => onDiffSelect(diff.id)}
+                  >
                     <Badge variant={config.variant} className="gap-1">
                       <StatusIcon className="h-3 w-3" />
                       {config.label}
                     </Badge>
                   </TableCell>
-                  <TableCell className="font-medium">{diff.jobName}</TableCell>
-                  <TableCell className="font-mono text-xs text-muted-foreground">
+                  <TableCell
+                    className="font-medium cursor-pointer"
+                    onClick={() => onDiffSelect(diff.id)}
+                  >
+                    {diff.jobName}
+                  </TableCell>
+                  <TableCell
+                    className="font-mono text-xs text-muted-foreground cursor-pointer"
+                    onClick={() => onDiffSelect(diff.id)}
+                  >
                     {diff.jobId}
                   </TableCell>
-                  <TableCell className="text-sm text-muted-foreground max-w-xs truncate">
+                  <TableCell
+                    className="text-sm text-muted-foreground max-w-xs truncate cursor-pointer"
+                    onClick={() => onDiffSelect(diff.id)}
+                  >
                     {diff.metadata?.endpoint || "-"}
                   </TableCell>
-                  <TableCell>
+                  <TableCell
+                    className="cursor-pointer"
+                    onClick={() => onDiffSelect(diff.id)}
+                  >
                     {diff.metadata?.method ? (
                       <Badge variant="outline" className="font-mono text-xs">
                         {diff.metadata.method}
@@ -142,14 +166,35 @@ export function DiffList({ category, onDiffSelect }: DiffListProps) {
                       "-"
                     )}
                   </TableCell>
-                  <TableCell className="text-sm">
+                  <TableCell
+                    className="text-sm cursor-pointer"
+                    onClick={() => onDiffSelect(diff.id)}
+                  >
                     <div className="flex items-center gap-1.5 text-muted-foreground">
                       <Clock className="h-3.5 w-3.5" />
                       {format(new Date(diff.timestamp), "MMM d, h:mm a")}
                     </div>
                   </TableCell>
-                  <TableCell className="text-right text-sm text-muted-foreground">
+                  <TableCell
+                    className="text-right text-sm text-muted-foreground cursor-pointer"
+                    onClick={() => onDiffSelect(diff.id)}
+                  >
                     {diff.metadata?.duration ? `${diff.metadata.duration}ms` : "-"}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {diff.metadata?.curlRequest && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedCurl(diff.metadata?.curlRequest || null);
+                        }}
+                      >
+                        <Code className="h-4 w-4 mr-1" />
+                        See cURL
+                      </Button>
+                    )}
                   </TableCell>
                 </TableRow>
               );
@@ -157,6 +202,30 @@ export function DiffList({ category, onDiffSelect }: DiffListProps) {
           </TableBody>
         </Table>
       </div>
+
+      <Dialog open={!!selectedCurl} onOpenChange={() => setSelectedCurl(null)}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>cURL Request</DialogTitle>
+            <DialogDescription>
+              Copy this cURL command to reproduce the request
+            </DialogDescription>
+          </DialogHeader>
+          <div className="max-h-[60vh] overflow-auto">
+            <pre className="bg-muted p-4 rounded-lg text-sm font-mono whitespace-pre-wrap break-all">
+              {selectedCurl}
+            </pre>
+          </div>
+          <Button
+            variant="outline"
+            onClick={() => {
+              navigator.clipboard.writeText(selectedCurl || "");
+            }}
+          >
+            Copy to Clipboard
+          </Button>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

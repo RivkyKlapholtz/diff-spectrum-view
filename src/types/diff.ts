@@ -19,6 +19,7 @@ export interface DiffItem {
     endpoint?: string;
     method?: string;
     duration?: number;
+    curlRequest?: string;
   };
 }
 

@@ -30,6 +30,10 @@ export const mockJsonResponseDiffs: DiffItem[] = [
       endpoint: "/api/v1/users/profile",
       method: "GET",
       duration: 245,
+      curlRequest: `curl -X GET 'https://api.example.com/api/v1/users/profile' \\
+  -H 'Content-Type: application/json' \\
+  -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c' \\
+  -H 'Accept: application/json'`,
     },
     oldValue: JSON.stringify(
       {
@@ -66,6 +70,11 @@ export const mockJsonResponseDiffs: DiffItem[] = [
       endpoint: "/api/v1/products",
       method: "GET",
       duration: 512,
+      curlRequest: `curl -X GET 'https://api.example.com/api/v1/products?page=1&limit=10' \\
+  -H 'Content-Type: application/json' \\
+  -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' \\
+  -H 'Accept: application/json' \\
+  -H 'User-Agent: DiffMonitor/1.0'`,
     },
     oldValue: JSON.stringify(
       {
@@ -103,6 +112,11 @@ export const mockJsonResponseDiffs: DiffItem[] = [
       endpoint: "/api/v1/orders/ORD-789",
       method: "GET",
       duration: 1023,
+      curlRequest: `curl -X GET 'https://api.example.com/api/v1/orders/ORD-789' \\
+  -H 'Content-Type: application/json' \\
+  -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' \\
+  -H 'X-Request-ID: req-789-xyz' \\
+  -H 'Accept: application/json'`,
     },
     oldValue: JSON.stringify(
       {
@@ -138,6 +152,15 @@ export const mockJsonResponseDiffs: DiffItem[] = [
       endpoint: "/api/v1/payments/webhook",
       method: "POST",
       duration: 89,
+      curlRequest: `curl -X POST 'https://api.example.com/api/v1/payments/webhook' \\
+  -H 'Content-Type: application/json' \\
+  -H 'X-Webhook-Signature: sha256=a1b2c3d4e5f6...' \\
+  -d '{
+    "event": "payment.completed",
+    "paymentId": "PAY-456",
+    "amount": 99.99,
+    "timestamp": "2025-01-23T07:20:15Z"
+  }'`,
     },
     oldValue: JSON.stringify(
       {
@@ -174,6 +197,17 @@ export const mockJsonResponseDiffs: DiffItem[] = [
       endpoint: "/api/v1/analytics/export",
       method: "POST",
       duration: 3456,
+      curlRequest: `curl -X POST 'https://api.example.com/api/v1/analytics/export' \\
+  -H 'Content-Type: application/json' \\
+  -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' \\
+  -d '{
+    "reportId": "RPT-123",
+    "format": "json",
+    "dateRange": {
+      "start": "2025-01-01",
+      "end": "2025-01-23"
+    }
+  }'`,
     },
     oldValue: JSON.stringify(
       {
@@ -218,6 +252,8 @@ export const mockStatusCodeDiffs: DiffItem[] = [
       endpoint: "/health",
       method: "GET",
       duration: 45,
+      curlRequest: `curl -X GET 'https://api.example.com/health' \\
+  -H 'Accept: application/json'`,
     },
     oldValue: "200",
     newValue: "503",
@@ -233,6 +269,10 @@ export const mockStatusCodeDiffs: DiffItem[] = [
       endpoint: "/api/v1/gateway",
       method: "GET",
       duration: 5012,
+      curlRequest: `curl -X GET 'https://api.example.com/api/v1/gateway' \\
+  -H 'Content-Type: application/json' \\
+  -H 'X-API-Key: sk_live_51234567890abcdef' \\
+  -H 'Accept: application/json'`,
     },
     oldValue: "200",
     newValue: "504",
@@ -248,6 +288,13 @@ export const mockStatusCodeDiffs: DiffItem[] = [
       endpoint: "/api/v1/auth/login",
       method: "POST",
       duration: 156,
+      curlRequest: `curl -X POST 'https://api.example.com/api/v1/auth/login' \\
+  -H 'Content-Type: application/json' \\
+  -d '{
+    "email": "user@example.com",
+    "password": "********",
+    "rememberMe": true
+  }'`,
     },
     oldValue: "401",
     newValue: "200",
