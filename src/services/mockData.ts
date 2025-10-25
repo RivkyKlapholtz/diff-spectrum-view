@@ -25,7 +25,6 @@ export const mockJsonResponseDiffs: DiffItem[] = [
     jobId: "job-2024-001",
     jobName: "User Profile API Sync",
     timestamp: "2025-01-23T10:30:00Z",
-    status: "completed",
     diffType: "body",
     metadata: {
       endpoint: "/api/v1/users/profile",
@@ -95,7 +94,6 @@ export const mockJsonResponseDiffs: DiffItem[] = [
     jobId: "job-2024-002",
     jobName: "Product Catalog Sync",
     timestamp: "2025-01-23T09:15:00Z",
-    status: "completed",
     diffType: "body",
     metadata: {
       endpoint: "/api/v1/products",
@@ -169,7 +167,6 @@ export const mockJsonResponseDiffs: DiffItem[] = [
     jobId: "job-2024-003",
     jobName: "Order Status Check",
     timestamp: "2025-01-23T08:45:00Z",
-    status: "failed",
     diffType: "body",
     metadata: {
       endpoint: "/api/v1/orders/ORD-789",
@@ -239,7 +236,6 @@ export const mockJsonResponseDiffs: DiffItem[] = [
     jobId: "job-2024-004",
     jobName: "Payment Gateway Webhook",
     timestamp: "2025-01-23T07:20:00Z",
-    status: "completed",
     diffType: "body",
     metadata: {
       endpoint: "/api/v1/payments/webhook",
@@ -319,7 +315,6 @@ export const mockJsonResponseDiffs: DiffItem[] = [
     jobId: "job-2024-005",
     jobName: "Analytics Data Export",
     timestamp: "2025-01-23T06:00:00Z",
-    status: "completed",
     diffType: "body",
     metadata: {
       endpoint: "/api/v1/analytics/export",
@@ -416,7 +411,6 @@ export const mockStatusCodeDiffs: DiffItem[] = [
     jobId: "job-2024-006",
     jobName: "Health Check Monitor",
     timestamp: "2025-01-23T11:00:00Z",
-    status: "completed",
     diffType: "status_code",
     metadata: {
       endpoint: "/health",
@@ -438,7 +432,6 @@ export const mockStatusCodeDiffs: DiffItem[] = [
     jobId: "job-2024-007",
     jobName: "API Gateway Status",
     timestamp: "2025-01-23T10:45:00Z",
-    status: "failed",
     diffType: "status_code",
     metadata: {
       endpoint: "/api/v1/gateway",
@@ -464,7 +457,6 @@ export const mockStatusCodeDiffs: DiffItem[] = [
     jobId: "job-2024-008",
     jobName: "Authentication Endpoint",
     timestamp: "2025-01-23T10:30:00Z",
-    status: "completed",
     diffType: "status_code",
     metadata: {
       endpoint: "/api/v1/auth/login",

@@ -2,7 +2,7 @@ import { DiffItem } from "@/types/diff";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
-import { Clock, CheckCircle, XCircle, AlertCircle } from "lucide-react";
+import { Clock } from "lucide-react";
 
 interface DiffCardProps {
   diff: DiffItem;
@@ -10,27 +10,6 @@ interface DiffCardProps {
 }
 
 export function DiffCard({ diff, onClick }: DiffCardProps) {
-  const statusConfig = {
-    completed: {
-      icon: CheckCircle,
-      variant: "default" as const,
-      label: "Completed",
-    },
-    failed: {
-      icon: XCircle,
-      variant: "destructive" as const,
-      label: "Failed",
-    },
-    pending: {
-      icon: AlertCircle,
-      variant: "secondary" as const,
-      label: "Pending",
-    },
-  };
-
-  const config = statusConfig[diff.status];
-  const StatusIcon = config.icon;
-
   return (
     <Card
       className="cursor-pointer transition-all hover:shadow-md hover:border-primary/50"
@@ -39,9 +18,8 @@ export function DiffCard({ diff, onClick }: DiffCardProps) {
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <CardTitle className="text-base font-medium">{diff.jobName}</CardTitle>
-          <Badge variant={config.variant}>
-            <StatusIcon className="mr-1 h-3 w-3" />
-            {config.label}
+          <Badge variant="outline" className="font-mono text-xs">
+            {diff.diffType === "status_code" ? "Status Code" : "Body"}
           </Badge>
         </div>
       </CardHeader>

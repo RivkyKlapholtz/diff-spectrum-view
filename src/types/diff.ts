@@ -12,7 +12,6 @@ export interface DiffItem {
   jobId: string;
   jobName: string;
   timestamp: string;
-  status: "completed" | "failed";
   diffType: "status_code" | "body";
   prodNormalizedResponse: string;
   integNormalizedResponse: string;

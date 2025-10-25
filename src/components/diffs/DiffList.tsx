@@ -77,24 +77,6 @@ export function DiffList({ category, onDiffSelect }: DiffListProps) {
     );
   }
 
-  const statusConfig = {
-    completed: {
-      icon: CheckCircle,
-      variant: "default" as const,
-      label: "Completed",
-    },
-    failed: {
-      icon: XCircle,
-      variant: "destructive" as const,
-      label: "Failed",
-    },
-    pending: {
-      icon: AlertCircle,
-      variant: "secondary" as const,
-      label: "Pending",
-    },
-  };
-
   return (
     <div className="p-6 space-y-4">
       <div>
@@ -110,7 +92,6 @@ export function DiffList({ category, onDiffSelect }: DiffListProps) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Status</TableHead>
               <TableHead>Job Name</TableHead>
               <TableHead>Job ID</TableHead>
               <TableHead>Diff Type</TableHead>
@@ -123,20 +104,8 @@ export function DiffList({ category, onDiffSelect }: DiffListProps) {
           </TableHeader>
           <TableBody>
             {diffs.map((diff) => {
-              const config = statusConfig[diff.status];
-              const StatusIcon = config.icon;
-
               return (
                 <TableRow key={diff.id} className="hover:bg-muted/50">
-                  <TableCell
-                    className="cursor-pointer"
-                    onClick={() => onDiffSelect(diff.id)}
-                  >
-                    <Badge variant={config.variant} className="gap-1">
-                      <StatusIcon className="h-3 w-3" />
-                      {config.label}
-                    </Badge>
-                  </TableCell>
                   <TableCell
                     className="font-medium cursor-pointer"
                     onClick={() => onDiffSelect(diff.id)}

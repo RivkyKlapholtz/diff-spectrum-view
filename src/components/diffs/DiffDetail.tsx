@@ -91,9 +91,6 @@ export function DiffDetail({ diffId, onBack }: DiffDetailProps) {
                   </div>
                 </div>
               </div>
-              <Badge variant={diff.status === "completed" ? "default" : "destructive"}>
-                {diff.status}
-              </Badge>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
