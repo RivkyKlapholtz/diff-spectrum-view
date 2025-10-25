@@ -28,7 +28,7 @@ interface DiffListProps {
 
 export function DiffList({ category, onDiffSelect }: DiffListProps) {
   const { data: diffs, isLoading, error } = useDiffsByCategory(category);
-  const [selectedCurl, setSelectedCurl] = useState<string | null>(null);
+  const [selectedCurl, setSelectedCurl] = useState<{ prod: string; integ: string } | null>(null);
 
   if (!category) {
     return (
@@ -113,6 +113,7 @@ export function DiffList({ category, onDiffSelect }: DiffListProps) {
               <TableHead>Status</TableHead>
               <TableHead>Job Name</TableHead>
               <TableHead>Job ID</TableHead>
+              <TableHead>Diff Type</TableHead>
               <TableHead>Endpoint</TableHead>
               <TableHead>Method</TableHead>
               <TableHead>Timestamp</TableHead>
@@ -149,6 +150,14 @@ export function DiffList({ category, onDiffSelect }: DiffListProps) {
                     {diff.jobId}
                   </TableCell>
                   <TableCell
+                    className="cursor-pointer"
+                    onClick={() => onDiffSelect(diff.id)}
+                  >
+                    <Badge variant="outline" className="font-mono text-xs">
+                      {diff.diffType === "status_code" ? "Status Code" : "Body"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell
                     className="text-sm text-muted-foreground max-w-xs truncate cursor-pointer"
                     onClick={() => onDiffSelect(diff.id)}
                   >
@@ -182,19 +191,20 @@ export function DiffList({ category, onDiffSelect }: DiffListProps) {
                     {diff.metadata?.duration ? `${diff.metadata.duration}ms` : "-"}
                   </TableCell>
                   <TableCell className="text-right">
-                    {diff.metadata?.curlRequest && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedCurl(diff.metadata?.curlRequest || null);
-                        }}
-                      >
-                        <Code className="h-4 w-4 mr-1" />
-                        See cURL
-                      </Button>
-                    )}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedCurl({
+                          prod: diff.prodCurlRequest,
+                          integ: diff.integCurlRequest
+                        });
+                      }}
+                    >
+                      <Code className="h-4 w-4 mr-1" />
+                      See cURL
+                    </Button>
                   </TableCell>
                 </TableRow>
               );
@@ -204,43 +214,82 @@ export function DiffList({ category, onDiffSelect }: DiffListProps) {
       </div>
 
       <Dialog open={!!selectedCurl} onOpenChange={() => setSelectedCurl(null)}>
-        <DialogContent className="max-w-3xl">
+        <DialogContent className="max-w-6xl max-h-[90vh]">
           <DialogHeader>
-            <DialogTitle>cURL Request</DialogTitle>
+            <DialogTitle>cURL Requests - Production vs Integration</DialogTitle>
             <DialogDescription>
-              Copy this cURL command to reproduce the request
+              Compare the cURL commands sent to both environments
             </DialogDescription>
           </DialogHeader>
-          <div className="max-h-[60vh] overflow-auto">
-            <pre className="bg-muted p-4 rounded-lg text-sm font-mono whitespace-pre-wrap break-all">
-              {selectedCurl}
-            </pre>
-          </div>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              onClick={() => {
-                navigator.clipboard.writeText(selectedCurl || "");
-              }}
-            >
-              Copy to Clipboard
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => {
-                const blob = new Blob([selectedCurl || ""], { type: "text/plain" });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement("a");
-                a.href = url;
-                a.download = "curl-request.sh";
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-              }}
-            >
-              Download as File
-            </Button>
+          <div className="grid grid-cols-2 gap-4 max-h-[60vh] overflow-auto">
+            <div>
+              <h3 className="text-sm font-semibold mb-2 text-foreground">Production cURL</h3>
+              <pre className="bg-muted p-4 rounded-lg text-sm font-mono whitespace-pre-wrap break-all">
+                {selectedCurl?.prod}
+              </pre>
+              <div className="flex gap-2 mt-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    navigator.clipboard.writeText(selectedCurl?.prod || "");
+                  }}
+                >
+                  Copy Prod
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const blob = new Blob([selectedCurl?.prod || ""], { type: "text/plain" });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = "prod-curl-request.sh";
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                  }}
+                >
+                  Download
+                </Button>
+              </div>
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold mb-2 text-foreground">Integration cURL</h3>
+              <pre className="bg-muted p-4 rounded-lg text-sm font-mono whitespace-pre-wrap break-all">
+                {selectedCurl?.integ}
+              </pre>
+              <div className="flex gap-2 mt-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    navigator.clipboard.writeText(selectedCurl?.integ || "");
+                  }}
+                >
+                  Copy Integ
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const blob = new Blob([selectedCurl?.integ || ""], { type: "text/plain" });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = "integ-curl-request.sh";
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                  }}
+                >
+                  Download
+                </Button>
+              </div>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

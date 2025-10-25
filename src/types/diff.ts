@@ -12,15 +12,22 @@ export interface DiffItem {
   jobId: string;
   jobName: string;
   timestamp: string;
-  status: "pending" | "completed" | "failed";
-  oldValue: string;
-  newValue: string;
+  status: "completed" | "failed";
+  diffType: "status_code" | "body";
+  prodNormalizedResponse: string;
+  integNormalizedResponse: string;
+  prodIgnoredFields?: string[];
+  integIgnoredFields?: string[];
+  prodCurlRequest: string;
+  integCurlRequest: string;
   metadata?: {
     endpoint?: string;
     method?: string;
     duration?: number;
-    curlRequest?: string;
   };
+  // Legacy fields for backward compatibility
+  oldValue: string;
+  newValue: string;
 }
 
 export interface DiffCategory {

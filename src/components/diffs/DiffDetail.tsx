@@ -2,9 +2,17 @@ import { useDiffById } from "@/hooks/useDiffs";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Calendar, Clock } from "lucide-react";
+import { ArrowLeft, Calendar, Clock, Code } from "lucide-react";
 import { format } from "date-fns";
 import ReactDiffViewer, { DiffMethod } from "react-diff-viewer-continued";
+import { useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface DiffDetailProps {
   diffId: string | null;
@@ -13,6 +21,7 @@ interface DiffDetailProps {
 
 export function DiffDetail({ diffId, onBack }: DiffDetailProps) {
   const { data: diff, isLoading, error } = useDiffById(diffId);
+  const [selectedCurl, setSelectedCurl] = useState<{ prod: string; integ: string } | null>(null);
 
   if (!diffId) {
     return null;
@@ -55,8 +64,8 @@ export function DiffDetail({ diffId, onBack }: DiffDetailProps) {
     }
   };
 
-  const oldValue = formatValue(diff.oldValue);
-  const newValue = formatValue(diff.newValue);
+  const prodValue = formatValue(diff.prodNormalizedResponse);
+  const integValue = formatValue(diff.integNormalizedResponse);
 
   return (
     <div className="p-6 space-y-6">
@@ -88,6 +97,18 @@ export function DiffDetail({ diffId, onBack }: DiffDetailProps) {
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <div className="text-xs text-muted-foreground mb-1">Job ID</div>
+                <div className="text-sm font-mono">{diff.jobId}</div>
+              </div>
+              <div>
+                <div className="text-xs text-muted-foreground mb-1">Diff Type</div>
+                <Badge variant="outline" className="font-mono text-xs">
+                  {diff.diffType === "status_code" ? "Status Code" : "Body"}
+                </Badge>
+              </div>
+            </div>
             {diff.metadata?.endpoint && (
               <div className="flex items-center gap-2">
                 <Badge variant="outline" className="font-mono">
@@ -98,26 +119,74 @@ export function DiffDetail({ diffId, onBack }: DiffDetailProps) {
                 </span>
               </div>
             )}
-            <div className="text-sm text-muted-foreground">
-              Job ID: <span className="font-mono">{diff.jobId}</span>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setSelectedCurl({
+                    prod: diff.prodCurlRequest,
+                    integ: diff.integCurlRequest
+                  });
+                }}
+              >
+                <Code className="h-4 w-4 mr-2" />
+                View cURL Requests
+              </Button>
             </div>
+            {(diff.prodIgnoredFields && diff.prodIgnoredFields.length > 0) || 
+             (diff.integIgnoredFields && diff.integIgnoredFields.length > 0) ? (
+              <div className="space-y-2">
+                <div className="text-xs font-semibold text-muted-foreground">Ignored Fields</div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <div className="text-xs text-muted-foreground mb-1">Production</div>
+                    {diff.prodIgnoredFields && diff.prodIgnoredFields.length > 0 ? (
+                      <div className="flex flex-wrap gap-1">
+                        {diff.prodIgnoredFields.map((field, idx) => (
+                          <Badge key={idx} variant="secondary" className="text-xs">
+                            {field}
+                          </Badge>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-xs text-muted-foreground">None</div>
+                    )}
+                  </div>
+                  <div>
+                    <div className="text-xs text-muted-foreground mb-1">Integration</div>
+                    {diff.integIgnoredFields && diff.integIgnoredFields.length > 0 ? (
+                      <div className="flex flex-wrap gap-1">
+                        {diff.integIgnoredFields.map((field, idx) => (
+                          <Badge key={idx} variant="secondary" className="text-xs">
+                            {field}
+                          </Badge>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-xs text-muted-foreground">None</div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ) : null}
           </CardContent>
         </Card>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Comparison View</CardTitle>
+          <CardTitle>Response Comparison: Production vs Integration</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="rounded-lg overflow-hidden border">
             <ReactDiffViewer
-              oldValue={oldValue}
-              newValue={newValue}
+              oldValue={prodValue}
+              newValue={integValue}
               splitView={true}
               compareMethod={DiffMethod.WORDS}
-              leftTitle="Previous Value"
-              rightTitle="Current Value"
+              leftTitle="Production (Normalized)"
+              rightTitle="Integration (Normalized)"
               useDarkTheme={false}
               styles={{
                 variables: {
@@ -147,6 +216,87 @@ export function DiffDetail({ diffId, onBack }: DiffDetailProps) {
           </div>
         </CardContent>
       </Card>
+
+      <Dialog open={!!selectedCurl} onOpenChange={() => setSelectedCurl(null)}>
+        <DialogContent className="max-w-6xl max-h-[90vh]">
+          <DialogHeader>
+            <DialogTitle>cURL Requests - Production vs Integration</DialogTitle>
+            <DialogDescription>
+              Compare the cURL commands sent to both environments
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-4 max-h-[60vh] overflow-auto">
+            <div>
+              <h3 className="text-sm font-semibold mb-2 text-foreground">Production cURL</h3>
+              <pre className="bg-muted p-4 rounded-lg text-sm font-mono whitespace-pre-wrap break-all">
+                {selectedCurl?.prod}
+              </pre>
+              <div className="flex gap-2 mt-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    navigator.clipboard.writeText(selectedCurl?.prod || "");
+                  }}
+                >
+                  Copy Prod
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const blob = new Blob([selectedCurl?.prod || ""], { type: "text/plain" });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = "prod-curl-request.sh";
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                  }}
+                >
+                  Download
+                </Button>
+              </div>
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold mb-2 text-foreground">Integration cURL</h3>
+              <pre className="bg-muted p-4 rounded-lg text-sm font-mono whitespace-pre-wrap break-all">
+                {selectedCurl?.integ}
+              </pre>
+              <div className="flex gap-2 mt-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    navigator.clipboard.writeText(selectedCurl?.integ || "");
+                  }}
+                >
+                  Copy Integ
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const blob = new Blob([selectedCurl?.integ || ""], { type: "text/plain" });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = "integ-curl-request.sh";
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                  }}
+                >
+                  Download
+                </Button>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
