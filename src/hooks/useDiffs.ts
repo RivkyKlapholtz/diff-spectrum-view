@@ -1,27 +1,39 @@
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/services/api";
 
+export function useJobsStatus() {
+  return useQuery({
+    queryKey: ["jobs-status"],
+    queryFn: api.getJobsStatus,
+    refetchInterval: 5000,
+  });
+}
+
 export function useDiffStats() {
   return useQuery({
     queryKey: ["diff-stats"],
     queryFn: api.getDiffStats,
-    refetchInterval: 5000, // Refetch every 5 seconds for live updates
+    refetchInterval: 5000,
   });
 }
 
-export function useDiffsByCategory(category: string | null) {
+export function useDiffsByType(diffType: string | null) {
   return useQuery({
-    queryKey: ["diffs", category],
-    queryFn: () => (category ? api.getDiffsByCategory(category) : Promise.resolve([])),
-    enabled: !!category,
-    refetchInterval: 5000, // Refetch every 5 seconds for live updates
+    queryKey: ["diffs-by-type", diffType],
+    queryFn: async () => {
+      if (!diffType) return [];
+      const ids = await api.getDiffsByType(diffType);
+      return Promise.all(ids.map(id => api.getDiffDetails(id)));
+    },
+    enabled: !!diffType,
+    refetchInterval: 5000,
   });
 }
 
 export function useDiffById(id: string | null) {
   return useQuery({
     queryKey: ["diff", id],
-    queryFn: () => (id ? api.getDiffById(id) : Promise.reject("No ID provided")),
+    queryFn: () => (id ? api.getDiffDetails(id) : Promise.reject("No ID provided")),
     enabled: !!id,
   });
 }

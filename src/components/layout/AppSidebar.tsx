@@ -31,6 +31,26 @@ export function AppSidebar({ selectedCategory, onCategorySelect }: AppSidebarPro
   const { state } = useSidebar();
   const { data: stats, isLoading } = useDiffStats();
   const isCollapsed = state === "collapsed";
+  
+  // Get deleted diffs with their categories from localStorage
+  const deletedDiffsWithCategories = (() => {
+    const stored = localStorage.getItem('deletedDiffsWithCategories');
+    return stored ? JSON.parse(stored) : {};
+  })();
+  
+  const deletedDiffsCount = Object.keys(deletedDiffsWithCategories).length;
+  
+  // Adjust counts based on deleted diffs
+  const adjustedCategories = stats?.categories.map(cat => {
+    if (cat.id === 'deleted_diffs') {
+      return { ...cat, count: deletedDiffsCount };
+    }
+    // For other categories, subtract their deleted diffs
+    const deletedInThisCategory = Object.values(deletedDiffsWithCategories).filter(
+      (category) => category === cat.id
+    ).length;
+    return { ...cat, count: Math.max(0, cat.count - deletedInThisCategory) };
+  }) || [];
 
   return (
     <Sidebar className={isCollapsed ? "w-14" : "w-64"} collapsible="icon">
@@ -46,9 +66,10 @@ export function AppSidebar({ selectedCategory, onCategorySelect }: AppSidebarPro
                   Loading...
                 </div>
               ) : (
-                stats?.categories.map((category) => {
+                adjustedCategories.map((category) => {
                   const Icon = categoryIcons[category.id] || FileJson;
                   const isActive = selectedCategory === category.id;
+                  const displayCount = category.id === 'deleted_diffs' ? deletedDiffsCount : category.count;
 
                   return (
                     <SidebarMenuItem key={category.id}>
@@ -61,7 +82,7 @@ export function AppSidebar({ selectedCategory, onCategorySelect }: AppSidebarPro
                           <>
                             <span className="flex-1">{category.label}</span>
                             <Badge variant="secondary" className="ml-auto">
-                              {category.count}
+                              {displayCount}
                             </Badge>
                           </>
                         )}

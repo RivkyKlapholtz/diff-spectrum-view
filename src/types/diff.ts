@@ -20,6 +20,7 @@ export interface DiffItem {
   integIgnoredFields?: string[];
   prodCurlRequest: string;
   integCurlRequest: string;
+  isChecked?: boolean;
   metadata?: {
     endpoint?: string;
     method?: string;
@@ -40,4 +41,11 @@ export interface DiffCategory {
 export interface DiffStats {
   totalDiffs: number;
   categories: DiffCategory[];
+}
+
+export interface JobsStatus {
+  failedDiffs: number;
+  successedDiffs: number;
+  failedJobs: number;
+  jobCounter: number;
 }

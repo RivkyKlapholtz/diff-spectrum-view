@@ -1,4 +1,11 @@
-import { DiffItem, DiffStats } from "@/types/diff";
+import { DiffItem, DiffStats, JobsStatus } from "@/types/diff";
+
+export const mockJobsStatus: JobsStatus = {
+  failedDiffs: 47,
+  successedDiffs: 153,
+  failedJobs: 5,
+  jobCounter: 200,
+};
 
 export const mockDiffStats: DiffStats = {
   totalDiffs: 8,

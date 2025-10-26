@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { useDiffsByCategory } from "@/hooks/useDiffs";
+import { useDiffsByType } from "@/hooks/useDiffs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -28,19 +29,33 @@ interface DiffListProps {
 }
 
 export function DiffList({ category, onDiffSelect }: DiffListProps) {
-  const { data: diffs, isLoading, error } = useDiffsByCategory(category);
+  const { data: diffs, isLoading, error } = useDiffsByType(category);
   const [selectedCurl, setSelectedCurl] = useState<{ prod: string; integ: string } | null>(null);
   const [deletedDiffs, setDeletedDiffs] = useState<Set<string>>(() => {
     const stored = localStorage.getItem('deletedDiffs');
     return new Set(stored ? JSON.parse(stored) : []);
   });
+  const [checkedDiffs, setCheckedDiffs] = useState<Set<string>>(() => {
+    const stored = localStorage.getItem('checkedDiffs');
+    return new Set(stored ? JSON.parse(stored) : []);
+  });
   const { toast } = useToast();
 
   const handleDeleteDiff = (diffId: string) => {
+    // Find the diff to get its category
+    const diff = diffs?.find(d => d.id === diffId);
+    if (!diff) return;
+    
     const newDeleted = new Set(deletedDiffs);
     newDeleted.add(diffId);
     setDeletedDiffs(newDeleted);
+    
+    // Store deleted diffs with their categories
+    const deletedWithCategories = JSON.parse(localStorage.getItem('deletedDiffsWithCategories') || '{}');
+    deletedWithCategories[diffId] = diff.category;
+    localStorage.setItem('deletedDiffsWithCategories', JSON.stringify(deletedWithCategories));
     localStorage.setItem('deletedDiffs', JSON.stringify([...newDeleted]));
+    
     toast({
       title: "Diff deleted",
       description: "The diff has been moved to deleted diffs",
@@ -51,11 +66,28 @@ export function DiffList({ category, onDiffSelect }: DiffListProps) {
     const newDeleted = new Set(deletedDiffs);
     newDeleted.delete(diffId);
     setDeletedDiffs(newDeleted);
+    
+    // Remove from deleted with categories
+    const deletedWithCategories = JSON.parse(localStorage.getItem('deletedDiffsWithCategories') || '{}');
+    delete deletedWithCategories[diffId];
+    localStorage.setItem('deletedDiffsWithCategories', JSON.stringify(deletedWithCategories));
     localStorage.setItem('deletedDiffs', JSON.stringify([...newDeleted]));
+    
     toast({
       title: "Diff restored",
       description: "The diff has been restored",
     });
+  };
+
+  const handleToggleChecked = (diffId: string) => {
+    const newChecked = new Set(checkedDiffs);
+    if (newChecked.has(diffId)) {
+      newChecked.delete(diffId);
+    } else {
+      newChecked.add(diffId);
+    }
+    setCheckedDiffs(newChecked);
+    localStorage.setItem('checkedDiffs', JSON.stringify([...newChecked]));
   };
 
   const handleOpenJiraTicket = (diff: any) => {
@@ -88,18 +120,6 @@ ${diff.integCurlRequest}
     isDeletedCategory ? deletedDiffs.has(diff.id) : !deletedDiffs.has(diff.id)
   );
 
-  if (!category) {
-    return (
-      <div className="flex h-full items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-2xl font-semibold text-foreground">Welcome to Diff Dashboard</h2>
-          <p className="mt-2 text-muted-foreground">
-            Select a category from the sidebar to view diffs
-          </p>
-        </div>
-      </div>
-    );
-  }
 
   if (isLoading) {
     return (
@@ -150,6 +170,7 @@ ${diff.integCurlRequest}
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-12">Checked</TableHead>
               <TableHead>Job ID</TableHead>
               <TableHead>Diff Type</TableHead>
               <TableHead>Timestamp</TableHead>
@@ -161,6 +182,12 @@ ${diff.integCurlRequest}
             {filteredDiffs.map((diff) => {
               return (
                 <TableRow key={diff.id} className="hover:bg-muted/50">
+                  <TableCell>
+                    <Checkbox
+                      checked={checkedDiffs.has(diff.id)}
+                      onCheckedChange={() => handleToggleChecked(diff.id)}
+                    />
+                  </TableCell>
                   <TableCell
                     className="font-mono text-xs text-muted-foreground cursor-pointer"
                     onClick={() => onDiffSelect(diff.id)}
