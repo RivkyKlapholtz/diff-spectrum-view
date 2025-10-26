@@ -15,6 +15,12 @@ export const mockDiffStats: DiffStats = {
       icon: "Hash",
       count: 3,
     },
+    {
+      id: "deleted_diffs",
+      label: "Deleted Diffs",
+      icon: "Trash2",
+      count: 0,
+    },
   ],
 };
 

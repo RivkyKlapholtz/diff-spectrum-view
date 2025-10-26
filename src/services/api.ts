@@ -23,6 +23,10 @@ export const api = {
     if (USE_MOCK_DATA) {
       // Simulate network delay
       await new Promise((resolve) => setTimeout(resolve, 400));
+      // For deleted_diffs, return all diffs from all categories
+      if (category === "deleted_diffs") {
+        return Object.values(mockData).flat();
+      }
       return mockData[category] || [];
     }
 

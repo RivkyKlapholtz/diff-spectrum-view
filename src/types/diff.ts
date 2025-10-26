@@ -4,7 +4,8 @@ export type DiffCategoryType =
   | "headers" 
   | "query_params" 
   | "request_body"
-  | "timing";
+  | "timing"
+  | "deleted_diffs";
 
 export interface DiffItem {
   id: string;

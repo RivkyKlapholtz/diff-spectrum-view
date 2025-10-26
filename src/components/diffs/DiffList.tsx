@@ -18,7 +18,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { AlertCircle, CheckCircle, XCircle, Clock, Code } from "lucide-react";
+import { AlertCircle, Clock, Code, Trash2, ExternalLink } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 
 interface DiffListProps {
@@ -29,6 +30,63 @@ interface DiffListProps {
 export function DiffList({ category, onDiffSelect }: DiffListProps) {
   const { data: diffs, isLoading, error } = useDiffsByCategory(category);
   const [selectedCurl, setSelectedCurl] = useState<{ prod: string; integ: string } | null>(null);
+  const [deletedDiffs, setDeletedDiffs] = useState<Set<string>>(() => {
+    const stored = localStorage.getItem('deletedDiffs');
+    return new Set(stored ? JSON.parse(stored) : []);
+  });
+  const { toast } = useToast();
+
+  const handleDeleteDiff = (diffId: string) => {
+    const newDeleted = new Set(deletedDiffs);
+    newDeleted.add(diffId);
+    setDeletedDiffs(newDeleted);
+    localStorage.setItem('deletedDiffs', JSON.stringify([...newDeleted]));
+    toast({
+      title: "Diff deleted",
+      description: "The diff has been moved to deleted diffs",
+    });
+  };
+
+  const handleRestoreDiff = (diffId: string) => {
+    const newDeleted = new Set(deletedDiffs);
+    newDeleted.delete(diffId);
+    setDeletedDiffs(newDeleted);
+    localStorage.setItem('deletedDiffs', JSON.stringify([...newDeleted]));
+    toast({
+      title: "Diff restored",
+      description: "The diff has been restored",
+    });
+  };
+
+  const handleOpenJiraTicket = (diff: any) => {
+    const ticketBody = `
+Diff ID: ${diff.id}
+Job ID: ${diff.jobId}
+Diff Type: ${diff.diffType}
+Timestamp: ${format(new Date(diff.timestamp), "MMM d, yyyy h:mm a")}
+
+Production Normalized Response:
+${diff.prodNormalizedResponse}
+
+Integration Normalized Response:
+${diff.integNormalizedResponse}
+
+Production cURL:
+${diff.prodCurlRequest}
+
+Integration cURL:
+${diff.integCurlRequest}
+    `.trim();
+
+    // Open Jira with pre-filled data - adjust URL based on your Jira instance
+    const jiraUrl = `https://your-jira-instance.atlassian.net/secure/CreateIssue!default.jspa?description=${encodeURIComponent(ticketBody)}`;
+    window.open(jiraUrl, '_blank');
+  };
+
+  const isDeletedCategory = category === "deleted_diffs";
+  const filteredDiffs = diffs?.filter(diff => 
+    isDeletedCategory ? deletedDiffs.has(diff.id) : !deletedDiffs.has(diff.id)
+  );
 
   if (!category) {
     return (
@@ -67,7 +125,7 @@ export function DiffList({ category, onDiffSelect }: DiffListProps) {
     );
   }
 
-  if (!diffs || diffs.length === 0) {
+  if (!filteredDiffs || filteredDiffs.length === 0) {
     return (
       <div className="flex h-full items-center justify-center">
         <div className="text-center">
@@ -84,7 +142,7 @@ export function DiffList({ category, onDiffSelect }: DiffListProps) {
           {category.split("_").map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(" ")} Diffs
         </h2>
         <p className="text-sm text-muted-foreground mt-1">
-          {diffs.length} diff{diffs.length !== 1 ? "s" : ""} found
+          {filteredDiffs.length} diff{filteredDiffs.length !== 1 ? "s" : ""} found
         </p>
       </div>
 
@@ -92,26 +150,17 @@ export function DiffList({ category, onDiffSelect }: DiffListProps) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Job Name</TableHead>
               <TableHead>Job ID</TableHead>
               <TableHead>Diff Type</TableHead>
-              <TableHead>Endpoint</TableHead>
-              <TableHead>Method</TableHead>
               <TableHead>Timestamp</TableHead>
               <TableHead className="text-right">Duration</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {diffs.map((diff) => {
+            {filteredDiffs.map((diff) => {
               return (
                 <TableRow key={diff.id} className="hover:bg-muted/50">
-                  <TableCell
-                    className="font-medium cursor-pointer"
-                    onClick={() => onDiffSelect(diff.id)}
-                  >
-                    {diff.jobName}
-                  </TableCell>
                   <TableCell
                     className="font-mono text-xs text-muted-foreground cursor-pointer"
                     onClick={() => onDiffSelect(diff.id)}
@@ -125,24 +174,6 @@ export function DiffList({ category, onDiffSelect }: DiffListProps) {
                     <Badge variant="outline" className="font-mono text-xs">
                       {diff.diffType === "status_code" ? "Status Code" : "Body"}
                     </Badge>
-                  </TableCell>
-                  <TableCell
-                    className="text-sm text-muted-foreground max-w-xs truncate cursor-pointer"
-                    onClick={() => onDiffSelect(diff.id)}
-                  >
-                    {diff.metadata?.endpoint || "-"}
-                  </TableCell>
-                  <TableCell
-                    className="cursor-pointer"
-                    onClick={() => onDiffSelect(diff.id)}
-                  >
-                    {diff.metadata?.method ? (
-                      <Badge variant="outline" className="font-mono text-xs">
-                        {diff.metadata.method}
-                      </Badge>
-                    ) : (
-                      "-"
-                    )}
                   </TableCell>
                   <TableCell
                     className="text-sm cursor-pointer"
@@ -160,20 +191,59 @@ export function DiffList({ category, onDiffSelect }: DiffListProps) {
                     {diff.metadata?.duration ? `${diff.metadata.duration}ms` : "-"}
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedCurl({
-                          prod: diff.prodCurlRequest,
-                          integ: diff.integCurlRequest
-                        });
-                      }}
-                    >
-                      <Code className="h-4 w-4 mr-1" />
-                      See cURL
-                    </Button>
+                    <div className="flex items-center gap-2 justify-end">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedCurl({
+                            prod: diff.prodCurlRequest,
+                            integ: diff.integCurlRequest
+                          });
+                        }}
+                      >
+                        <Code className="h-4 w-4 mr-1" />
+                        cURL
+                      </Button>
+                      {isDeletedCategory ? (
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleOpenJiraTicket(diff);
+                            }}
+                          >
+                            <ExternalLink className="h-4 w-4 mr-1" />
+                            Jira
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRestoreDiff(diff.id);
+                            }}
+                          >
+                            Restore
+                          </Button>
+                        </>
+                      ) : (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteDiff(diff.id);
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4 mr-1" />
+                          Delete
+                        </Button>
+                      )}
+                    </div>
                   </TableCell>
                 </TableRow>
               );
