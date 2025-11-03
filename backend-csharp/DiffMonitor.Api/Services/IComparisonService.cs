@@ -5,6 +5,7 @@ namespace DiffMonitor.Api.Services;
 public interface IComparisonService
 {
     Task<ComparisonResult> CompareEndpointsAsync(string endpoint, string method);
+    Task<ComparisonResult> CompareDuplicatedRequestAsync(DuplicationRequest request);
 }
 
 public class ComparisonResult

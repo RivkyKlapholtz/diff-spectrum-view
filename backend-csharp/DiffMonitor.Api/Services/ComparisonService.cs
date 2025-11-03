@@ -113,10 +113,115 @@ public class ComparisonService : IComparisonService
         }
     }
 
-    private async Task<ApiResponse> MakeRequestAsync(string url, string method)
+    public async Task<ComparisonResult> CompareDuplicatedRequestAsync(DuplicationRequest request)
+    {
+        try
+        {
+            var startTime = DateTime.UtcNow;
+
+            // Make request to test URL
+            var testResponse = await MakeRequestAsync(request.TestUrl, "POST", request.Content);
+
+            var duration = (int)(DateTime.UtcNow - startTime).TotalMilliseconds;
+
+            // Parse expected response (from source/production)
+            var sourceResponse = new ApiResponse
+            {
+                StatusCode = 200, // Assuming success from flapi
+                Body = request.ExpectedResponse,
+                IsJson = true
+            };
+
+            // Extract endpoint and method from URLs
+            var endpoint = ExtractEndpoint(request.TestUrl);
+            var method = "POST";
+
+            // Compare status codes
+            if (testResponse.StatusCode != sourceResponse.StatusCode)
+            {
+                var diff = CreateDiff(
+                    endpoint,
+                    method,
+                    duration,
+                    "status_code",
+                    sourceResponse,
+                    testResponse,
+                    request.SourceUrl,
+                    request.TestUrl
+                );
+
+                return new ComparisonResult
+                {
+                    HasDifference = true,
+                    Diff = diff
+                };
+            }
+
+            // Compare response bodies (JSON)
+            if (testResponse.IsJson && sourceResponse.IsJson)
+            {
+                var sourceNormalized = NormalizeJson(sourceResponse.Body);
+                var testNormalized = NormalizeJson(testResponse.Body);
+
+                if (sourceNormalized != testNormalized)
+                {
+                    var diff = CreateDiff(
+                        endpoint,
+                        method,
+                        duration,
+                        "json_response",
+                        sourceResponse,
+                        testResponse,
+                        request.SourceUrl,
+                        request.TestUrl
+                    );
+
+                    return new ComparisonResult
+                    {
+                        HasDifference = true,
+                        Diff = diff
+                    };
+                }
+            }
+
+            return new ComparisonResult
+            {
+                HasDifference = false
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error comparing duplicated request");
+            return new ComparisonResult
+            {
+                HasDifference = false,
+                ErrorMessage = ex.Message
+            };
+        }
+    }
+
+    private string ExtractEndpoint(string url)
+    {
+        try
+        {
+            var uri = new Uri(url);
+            return uri.PathAndQuery;
+        }
+        catch
+        {
+            return url;
+        }
+    }
+
+    private async Task<ApiResponse> MakeRequestAsync(string url, string method, string? content = null)
     {
         var request = new HttpRequestMessage(new HttpMethod(method), url);
         request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
+        if (!string.IsNullOrEmpty(content))
+        {
+            request.Content = new StringContent(content, Encoding.UTF8, "application/json");
+        }
 
         var response = await _httpClient.SendAsync(request);
         var body = await response.Content.ReadAsStringAsync();

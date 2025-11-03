@@ -9,12 +9,51 @@ namespace DiffMonitor.Api.Controllers;
 public class DiffsController : ControllerBase
 {
     private readonly IDiffService _diffService;
+    private readonly IComparisonService _comparisonService;
     private readonly ILogger<DiffsController> _logger;
 
-    public DiffsController(IDiffService diffService, ILogger<DiffsController> logger)
+    public DiffsController(
+        IDiffService diffService, 
+        IComparisonService comparisonService,
+        ILogger<DiffsController> logger)
     {
         _diffService = diffService;
+        _comparisonService = comparisonService;
         _logger = logger;
+    }
+
+    [HttpPost("duplication")]
+    public async Task<IActionResult> HandleDuplication([FromBody] DuplicationRequest request)
+    {
+        try
+        {
+            if (request == null || 
+                string.IsNullOrWhiteSpace(request.TestUrl) || 
+                string.IsNullOrWhiteSpace(request.SourceUrl))
+            {
+                return BadRequest("Invalid duplication request");
+            }
+
+            var result = await _comparisonService.CompareDuplicatedRequestAsync(request);
+
+            if (!string.IsNullOrEmpty(result.ErrorMessage))
+            {
+                _logger.LogError("Error processing duplication: {Error}", result.ErrorMessage);
+                return StatusCode(500, result.ErrorMessage);
+            }
+
+            if (result.HasDifference && result.Diff != null)
+            {
+                await _diffService.SaveDiffAsync(result.Diff);
+            }
+
+            return Ok(new { hasDifference = result.HasDifference });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error handling duplication request");
+            return StatusCode(500, "Internal server error");
+        }
     }
 
     [HttpGet("jobsStatus")]
