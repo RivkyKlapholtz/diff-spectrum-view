@@ -4,78 +4,92 @@ Backend API for monitoring and comparing API responses between Production and In
 
 ## Prerequisites
 
-- .NET 8.0 SDK
-- SQL Server (LocalDB or full version)
-- Visual Studio 2022 or VS Code
+- .NET 8.0 SDK - [הורד כאן](https://dotnet.microsoft.com/download/dotnet/8.0)
+- SQL Server (LocalDB מגיע עם Visual Studio, או גרסה מלאה)
+- Visual Studio 2022 (מומלץ) או VS Code
 
-## Setup Instructions
+## הוראות הרצה מהירות
 
-### 1. Install .NET 8.0 SDK
-Download from: https://dotnet.microsoft.com/download/dotnet/8.0
+### אפשרות 1: Visual Studio 2022 (מומלץ)
 
-### 2. Configure Database Connection Strings
+1. **פתח את הפרויקט:**
+   - פתח את `backend-csharp/DiffMonitor.sln` ב-Visual Studio
+   - או: לחץ פעמיים על הקובץ `DiffMonitor.sln`
 
-Edit `appsettings.json` and update the connection strings:
+2. **שחזר חבילות NuGet:**
+   - Visual Studio אמור לעשות זאת אוטומטית
+   - אם לא: לחץ ימני על הפתרון (Solution) → "Restore NuGet Packages"
 
-```json
-"ConnectionStrings": {
-  "DefaultConnection": "Server=localhost;Database=DiffMonitor;Trusted_Connection=True;TrustServerCertificate=True;",
-  "HangfireConnection": "Server=localhost;Database=DiffMonitorHangfire;Trusted_Connection=True;TrustServerCertificate=True;"
-}
+3. **עדכן Connection Strings:**
+   - פתח `appsettings.json`
+   - אם יש לך SQL Server מקומי, השאר כמו שזה
+   - אם אתה משתמש ב-LocalDB (ברירת המחדל של Visual Studio):
+   ```json
+   "ConnectionStrings": {
+     "DefaultConnection": "Server=(localdb)\\mssqllocaldb;Database=DiffMonitor;Trusted_Connection=True;MultipleActiveResultSets=true",
+     "HangfireConnection": "Server=(localdb)\\mssqllocaldb;Database=DiffMonitorHangfire;Trusted_Connection=True;MultipleActiveResultSets=true"
+   }
+   ```
+
+4. **צור את בסיס הנתונים:**
+   - פתח **Package Manager Console** (Tools → NuGet Package Manager → Package Manager Console)
+   - הרץ:
+   ```
+   Add-Migration InitialCreate
+   Update-Database
+   ```
+
+5. **הרץ את הפרויקט:**
+   - לחץ F5 או על כפתור ▶ (Start)
+   - הדפדפן ייפתח אוטומטית עם Swagger
+
+### אפשרות 2: שורת פקודה (Command Line)
+
+```bash
+# 1. נווט לתיקיית הפרויקט
+cd backend-csharp/DiffMonitor.Api
+
+# 2. שחזר חבילות
+dotnet restore
+
+# 3. צור מיגרציה ועדכן בסיס נתונים
+dotnet ef migrations add InitialCreate
+dotnet ef database update
+
+# 4. הרץ את האפליקציה
+dotnet run
 ```
 
-For LocalDB, use:
-```
-Server=(localdb)\\mssqllocaldb;Database=DiffMonitor;Trusted_Connection=True;
-```
+## כתובות חשובות
 
-### 3. Configure API Endpoints
+לאחר הרצת הפרויקט, תהיה לך גישה ל:
+- **API:** `http://localhost:5000`
+- **Swagger UI:** `http://localhost:5000/swagger` - תיעוד API אינטראקטיבי
+- **Hangfire Dashboard:** `http://localhost:5000/hangfire` - ניטור עבודות רקע
 
-Edit `appsettings.json` to configure the endpoints you want to monitor:
+## הגדרת Endpoints לניטור
+
+עבור אל `appsettings.json` והגדר את כתובות ה-API שברצונך לנטר:
 
 ```json
 "ApiConfiguration": {
-  "ProductionBaseUrl": "https://api.production.com",
-  "IntegrationBaseUrl": "https://api.integration.com",
+  "ProductionBaseUrl": "https://your-production-api.com",
+  "IntegrationBaseUrl": "https://your-integration-api.com",
   "Endpoints": [
     {
       "Path": "/api/v1/users/profile",
-      "Method": "GET"
-    },
-    {
-      "Path": "/api/v1/products",
       "Method": "GET"
     }
   ]
 }
 ```
 
-### 4. Create Database
-
-Open Package Manager Console in Visual Studio or terminal:
-
-```bash
-cd DiffMonitor.Api
-dotnet ef migrations add InitialCreate
-dotnet ef database update
-```
-
-### 5. Run the Application
-
-```bash
-cd DiffMonitor.Api
-dotnet run
-```
-
-The API will be available at:
-- API: `http://localhost:5000`
-- Swagger: `http://localhost:5000/swagger`
-- Hangfire Dashboard: `http://localhost:5000/hangfire`
+**שים לב:** עבור Flapi, אין צורך להגדיר Endpoints כאן - הבקשות יגיעו אוטומטית דרך POST endpoint `/api/duplication`.
 
 ## API Endpoints
 
 ### GET /api/jobsStatus
-Returns job statistics:
+מחזיר סטטיסטיקות של עבודות:
 ```json
 {
   "failedDiffs": 47,
@@ -86,13 +100,27 @@ Returns job statistics:
 ```
 
 ### GET /api/diffsByType?type={type}
-Returns array of diff IDs for a specific type:
-- `json_response`
-- `status_code`
-- `deleted_diffs`
+מחזיר מערך של מזהי diff לפי סוג:
+- `json_response` - הבדלים בתוכן JSON
+- `status_code` - הבדלים בקוד סטטוס
+- `deleted_diffs` - diffs שנמחקו
 
 ### GET /api/diffDetailes?id={id}
-Returns detailed information about a specific diff.
+מחזיר מידע מפורט על diff ספציפי.
+
+### POST /api/duplication
+**נקודת קצה זו משמשת את Flapi** - מקבלת בקשה משוכפלת ומשווה בין התגובות:
+```json
+{
+  "testUrl": "https://integration-api.com/api/endpoint",
+  "sourceUrl": "https://production-api.com/api/endpoint",
+  "content": "{...}",
+  "expectedResponse": "{...}",
+  "options": {
+    "allowSemanticCompresion": true
+  }
+}
+```
 
 ## Hangfire Configuration
 
@@ -127,18 +155,48 @@ DiffMonitor.Api/
 └── Program.cs                   # Application startup
 ```
 
-## Troubleshooting
+## חיבור הקליינט (Frontend) לבאקאנד
 
-### Database Connection Issues
-- Make sure SQL Server is running
-- Verify connection strings in `appsettings.json`
-- For LocalDB: `sqllocaldb start mssqllocaldb`
+לאחר שהבאקאנד רץ, עבור לקובץ `src/services/api.ts` בפרויקט הקליינט ושנה:
 
-### CORS Issues
-The API allows all origins by default. For production, update the CORS policy in `Program.cs`.
+```typescript
+const API_BASE_URL = 'http://localhost:5000/api';
+const USE_MOCK_DATA = false; // שנה ל-false כדי להשתמש בבאקאנד האמיתי
+```
 
-### Hangfire Dashboard Not Loading
-Make sure you're accessing `/hangfire` (not `/hangfire/`)
+## פתרון בעיות נפוצות
+
+### בעיות חיבור לבסיס נתונים
+- ודא ש-SQL Server רץ
+- בדוק את ה-connection strings ב-`appsettings.json`
+- עבור LocalDB: הרץ `sqllocaldb start mssqllocaldb` בשורת הפקודה
+- אם יש שגיאת הרשאות, הרץ Visual Studio כמנהל (Run as Administrator)
+
+### שגיאה: "Cannot connect to SQL Server"
+```bash
+# בדוק אם LocalDB מותקן
+sqllocaldb info
+
+# צור instance חדש אם צריך
+sqllocaldb create MSSQLLocalDB
+
+# התחל את ה-instance
+sqllocaldb start MSSQLLocalDB
+```
+
+### שגיאה: "dotnet ef command not found"
+```bash
+# התקן את EF Core tools
+dotnet tool install --global dotnet-ef
+```
+
+### Hangfire Dashboard לא נטען
+- ודא שאתה ניגש ל-`/hangfire` (ולא `/hangfire/`)
+- נקה את cache הדפדפן
+
+### CORS Errors מהקליינט
+- ודא שהבאקאנד רץ על `http://localhost:5000`
+- בדוק שה-CORS מוגדר נכון ב-`Program.cs` (כבר מוגדר לאפשר הכל ב-development)
 
 ## Production Considerations
 
