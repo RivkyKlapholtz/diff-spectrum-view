@@ -4,7 +4,7 @@ Backend API for monitoring and comparing API responses between Production and In
 
 ## Prerequisites
 
-- .NET 8.0 SDK - [הורד כאן](https://dotnet.microsoft.com/download/dotnet/8.0)
+- .NET 6.0 SDK - [הורד כאן](https://dotnet.microsoft.com/download/dotnet/6.0)
 - SQL Server (LocalDB מגיע עם Visual Studio, או גרסה מלאה)
 - Visual Studio 2022 (מומלץ) או VS Code
 
