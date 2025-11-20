@@ -19,7 +19,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { AlertCircle, Clock, Code, Trash2, ExternalLink } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { AlertCircle, Clock, Code, Trash2, ExternalLink, Search, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 
@@ -39,6 +40,7 @@ export function DiffList({ category, onDiffSelect }: DiffListProps) {
     const stored = localStorage.getItem('checkedDiffs');
     return new Set(stored ? JSON.parse(stored) : []);
   });
+  const [searchFilter, setSearchFilter] = useState("");
   const { toast } = useToast();
 
   const handleDeleteDiff = (diffId: string) => {
@@ -116,9 +118,32 @@ ${diff.integCurlRequest}
   };
 
   const isDeletedCategory = category === "deleted_diffs";
-  const filteredDiffs = diffs?.filter(diff => 
-    isDeletedCategory ? deletedDiffs.has(diff.id) : !deletedDiffs.has(diff.id)
-  );
+  const filteredDiffs = diffs?.filter(diff => {
+    const isInCategory = isDeletedCategory ? deletedDiffs.has(diff.id) : !deletedDiffs.has(diff.id);
+    if (!isInCategory) return false;
+    
+    if (!searchFilter.trim()) return true;
+    
+    const searchLower = searchFilter.toLowerCase();
+    
+    // Search in all text fields
+    return (
+      diff.id.toLowerCase().includes(searchLower) ||
+      diff.jobId.toLowerCase().includes(searchLower) ||
+      diff.jobName.toLowerCase().includes(searchLower) ||
+      diff.diffType.toLowerCase().includes(searchLower) ||
+      diff.category.toLowerCase().includes(searchLower) ||
+      diff.prodNormalizedResponse.toLowerCase().includes(searchLower) ||
+      diff.integNormalizedResponse.toLowerCase().includes(searchLower) ||
+      diff.prodCurlRequest.toLowerCase().includes(searchLower) ||
+      diff.integCurlRequest.toLowerCase().includes(searchLower) ||
+      diff.oldValue.toLowerCase().includes(searchLower) ||
+      diff.newValue.toLowerCase().includes(searchLower) ||
+      (diff.metadata?.endpoint?.toLowerCase().includes(searchLower)) ||
+      (diff.metadata?.method?.toLowerCase().includes(searchLower)) ||
+      format(new Date(diff.timestamp), "MMM d, h:mm a").toLowerCase().includes(searchLower)
+    );
+  });
 
 
   if (isLoading) {
@@ -164,6 +189,27 @@ ${diff.integCurlRequest}
         <p className="text-sm text-muted-foreground mt-1">
           {filteredDiffs.length} diff{filteredDiffs.length !== 1 ? "s" : ""} found
         </p>
+      </div>
+
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          type="text"
+          placeholder="חיפוש בכל השדות (Job ID, Response, cURL, וכו'...)"
+          value={searchFilter}
+          onChange={(e) => setSearchFilter(e.target.value)}
+          className="pl-9 pr-9"
+        />
+        {searchFilter && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
+            onClick={() => setSearchFilter("")}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        )}
       </div>
 
       <div className="rounded-lg border bg-card">
