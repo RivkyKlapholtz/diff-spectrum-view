@@ -40,7 +40,13 @@ export function DiffList({ category, onDiffSelect }: DiffListProps) {
     const stored = localStorage.getItem('checkedDiffs');
     return new Set(stored ? JSON.parse(stored) : []);
   });
-  const [searchFilter, setSearchFilter] = useState("");
+  const [filters, setFilters] = useState({
+    jobId: "",
+    diffType: "",
+    timestamp: "",
+    duration: "",
+    response: "",
+  });
   const { toast } = useToast();
 
   const handleDeleteDiff = (diffId: string) => {
@@ -122,27 +128,42 @@ ${diff.integCurlRequest}
     const isInCategory = isDeletedCategory ? deletedDiffs.has(diff.id) : !deletedDiffs.has(diff.id);
     if (!isInCategory) return false;
     
-    if (!searchFilter.trim()) return true;
+    // Apply individual column filters
+    if (filters.jobId && !diff.jobId.toLowerCase().includes(filters.jobId.toLowerCase())) {
+      return false;
+    }
     
-    const searchLower = searchFilter.toLowerCase();
+    if (filters.diffType) {
+      const diffTypeDisplay = diff.diffType === "status_code" ? "Status Code" : "Body";
+      if (!diffTypeDisplay.toLowerCase().includes(filters.diffType.toLowerCase())) {
+        return false;
+      }
+    }
     
-    // Search in all text fields
-    return (
-      diff.id.toLowerCase().includes(searchLower) ||
-      diff.jobId.toLowerCase().includes(searchLower) ||
-      diff.jobName.toLowerCase().includes(searchLower) ||
-      diff.diffType.toLowerCase().includes(searchLower) ||
-      diff.category.toLowerCase().includes(searchLower) ||
-      diff.prodNormalizedResponse.toLowerCase().includes(searchLower) ||
-      diff.integNormalizedResponse.toLowerCase().includes(searchLower) ||
-      diff.prodCurlRequest.toLowerCase().includes(searchLower) ||
-      diff.integCurlRequest.toLowerCase().includes(searchLower) ||
-      diff.oldValue.toLowerCase().includes(searchLower) ||
-      diff.newValue.toLowerCase().includes(searchLower) ||
-      (diff.metadata?.endpoint?.toLowerCase().includes(searchLower)) ||
-      (diff.metadata?.method?.toLowerCase().includes(searchLower)) ||
-      format(new Date(diff.timestamp), "MMM d, h:mm a").toLowerCase().includes(searchLower)
-    );
+    if (filters.timestamp) {
+      const formattedTimestamp = format(new Date(diff.timestamp), "MMM d, h:mm a");
+      if (!formattedTimestamp.toLowerCase().includes(filters.timestamp.toLowerCase())) {
+        return false;
+      }
+    }
+    
+    if (filters.duration) {
+      const durationText = diff.metadata?.duration ? `${diff.metadata.duration}ms` : "-";
+      if (!durationText.toLowerCase().includes(filters.duration.toLowerCase())) {
+        return false;
+      }
+    }
+    
+    if (filters.response) {
+      const responseLower = filters.response.toLowerCase();
+      const matchesProd = diff.prodNormalizedResponse.toLowerCase().includes(responseLower);
+      const matchesInteg = diff.integNormalizedResponse.toLowerCase().includes(responseLower);
+      if (!matchesProd && !matchesInteg) {
+        return false;
+      }
+    }
+    
+    return true;
   });
 
 
@@ -191,23 +212,34 @@ ${diff.integCurlRequest}
         </p>
       </div>
 
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          type="text"
-          placeholder="חיפוש בכל השדות (Job ID, Response, cURL, וכו'...)"
-          value={searchFilter}
-          onChange={(e) => setSearchFilter(e.target.value)}
-          className="pl-9 pr-9"
-        />
-        {searchFilter && (
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <Search className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+          <Input
+            type="text"
+            placeholder="Filter by Response content..."
+            value={filters.response}
+            onChange={(e) => setFilters({ ...filters, response: e.target.value })}
+            className="flex-1"
+          />
+          {filters.response && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-9 px-3"
+              onClick={() => setFilters({ ...filters, response: "" })}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+        {(filters.jobId || filters.diffType || filters.timestamp || filters.duration || filters.response) && (
           <Button
-            variant="ghost"
+            variant="outline"
             size="sm"
-            className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
-            onClick={() => setSearchFilter("")}
+            onClick={() => setFilters({ jobId: "", diffType: "", timestamp: "", duration: "", response: "" })}
           >
-            <X className="h-4 w-4" />
+            Clear All Filters
           </Button>
         )}
       </div>
@@ -222,6 +254,46 @@ ${diff.integCurlRequest}
               <TableHead>Timestamp</TableHead>
               <TableHead className="text-right">Duration</TableHead>
               <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+            <TableRow>
+              <TableHead className="w-12"></TableHead>
+              <TableHead>
+                <Input
+                  type="text"
+                  placeholder="Filter..."
+                  value={filters.jobId}
+                  onChange={(e) => setFilters({ ...filters, jobId: e.target.value })}
+                  className="h-8 text-xs"
+                />
+              </TableHead>
+              <TableHead>
+                <Input
+                  type="text"
+                  placeholder="Filter..."
+                  value={filters.diffType}
+                  onChange={(e) => setFilters({ ...filters, diffType: e.target.value })}
+                  className="h-8 text-xs"
+                />
+              </TableHead>
+              <TableHead>
+                <Input
+                  type="text"
+                  placeholder="Filter..."
+                  value={filters.timestamp}
+                  onChange={(e) => setFilters({ ...filters, timestamp: e.target.value })}
+                  className="h-8 text-xs"
+                />
+              </TableHead>
+              <TableHead className="text-right">
+                <Input
+                  type="text"
+                  placeholder="Filter..."
+                  value={filters.duration}
+                  onChange={(e) => setFilters({ ...filters, duration: e.target.value })}
+                  className="h-8 text-xs"
+                />
+              </TableHead>
+              <TableHead></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
