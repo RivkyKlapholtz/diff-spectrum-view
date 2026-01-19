@@ -4,7 +4,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Calendar, Clock, Code } from "lucide-react";
 import { format } from "date-fns";
-import ReactDiffViewer, { DiffMethod } from "react-diff-viewer-continued";
 import { useState } from "react";
 import {
   Dialog,
@@ -13,6 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { LargeResponseViewer } from "./LargeResponseViewer";
 
 interface DiffDetailProps {
   diffId: string | null;
@@ -171,48 +171,7 @@ export function DiffDetail({ diffId, onBack }: DiffDetailProps) {
         </Card>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Response Comparison: Production vs Integration</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="rounded-lg overflow-hidden border">
-            <ReactDiffViewer
-              oldValue={prodValue}
-              newValue={integValue}
-              splitView={true}
-              compareMethod={DiffMethod.WORDS}
-              leftTitle="Production (Normalized)"
-              rightTitle="Integration (Normalized)"
-              useDarkTheme={false}
-              styles={{
-                variables: {
-                  light: {
-                    diffViewerBackground: "hsl(var(--card))",
-                    diffViewerColor: "hsl(var(--foreground))",
-                    addedBackground: "hsl(var(--addition))",
-                    addedColor: "hsl(var(--foreground))",
-                    removedBackground: "hsl(var(--deletion))",
-                    removedColor: "hsl(var(--foreground))",
-                    wordAddedBackground: "hsl(var(--addition-border))",
-                    wordRemovedBackground: "hsl(var(--deletion-border))",
-                    addedGutterBackground: "hsl(var(--addition-border))",
-                    removedGutterBackground: "hsl(var(--deletion-border))",
-                    gutterBackground: "hsl(var(--muted))",
-                    gutterBackgroundDark: "hsl(var(--muted))",
-                    highlightBackground: "hsl(var(--accent))",
-                    highlightGutterBackground: "hsl(var(--accent))",
-                  },
-                },
-                contentText: {
-                  fontFamily: "ui-monospace, monospace",
-                  fontSize: "13px",
-                },
-              }}
-            />
-          </div>
-        </CardContent>
-      </Card>
+      <LargeResponseViewer prodValue={prodValue} integValue={integValue} />
 
       <Dialog open={!!selectedCurl} onOpenChange={() => setSelectedCurl(null)}>
         <DialogContent className="max-w-6xl max-h-[90vh]">
