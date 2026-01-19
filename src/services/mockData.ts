@@ -1,5 +1,45 @@
 import { DiffItem, DiffStats, JobsStatus } from "@/types/diff";
 
+// Helper function to generate large mock responses
+function generateLargeResponse(env: string, itemCount: number): string {
+  const items = [];
+  for (let i = 0; i < itemCount; i++) {
+    items.push({
+      id: `item-${i}`,
+      name: `${env === "production" ? "Prod" : "Integ"} Item #${i}`,
+      description: `This is a detailed description for item ${i} in the ${env} environment. execution end successfully. Lorem ipsum dolor sit amet, consectetur adipiscing elit.`,
+      status: env === "production" ? (i % 3 === 0 ? "active" : "pending") : (i % 2 === 0 ? "active" : "inactive"),
+      metadata: {
+        createdAt: `2025-01-${String((i % 28) + 1).padStart(2, "0")}T10:30:00Z`,
+        updatedAt: `2025-01-${String((i % 28) + 1).padStart(2, "0")}T15:45:00Z`,
+        version: env === "production" ? `1.${i % 10}.0` : `2.${i % 10}.0`,
+        tags: [`tag-${i % 5}`, `category-${i % 3}`, env],
+        metrics: {
+          views: Math.floor(Math.random() * 10000) + (env === "production" ? 0 : 500),
+          clicks: Math.floor(Math.random() * 1000) + (env === "production" ? 0 : 50),
+          conversions: Math.floor(Math.random() * 100) + (env === "production" ? 0 : 10),
+        },
+      },
+      config: {
+        enabled: i % 2 === 0,
+        priority: env === "production" ? i % 5 : (i + 1) % 5,
+        threshold: env === "production" ? 0.75 : 0.85,
+        settings: {
+          retryCount: 3,
+          timeout: env === "production" ? 5000 : 10000,
+          cacheEnabled: true,
+        },
+      },
+    });
+  }
+  return JSON.stringify({ 
+    environment: env, 
+    totalItems: itemCount, 
+    generatedAt: "2025-01-23T05:30:00Z",
+    items 
+  }, null, 2);
+}
+
 export const mockJobsStatus: JobsStatus = {
   failedDiffs: 47,
   successedDiffs: 153,
@@ -414,6 +454,32 @@ export const mockJsonResponseDiffs: DiffItem[] = [
       null,
       2
     ),
+  },
+  // Large response diff - to test virtualization and truncation
+  {
+    id: "json-6",
+    category: "json_response",
+    jobId: "job-2024-009",
+    jobName: "Large Dataset Export (VERY LARGE)",
+    timestamp: "2025-01-23T05:30:00Z",
+    diffType: "body",
+    metadata: {
+      endpoint: "/api/v1/data/export-all",
+      method: "GET",
+      duration: 15234,
+    },
+    prodCurlRequest: `curl -X GET 'https://api.production.com/api/v1/data/export-all' \\
+  -H 'Content-Type: application/json' \\
+  -H 'Authorization: Bearer prod_export_token'`,
+    integCurlRequest: `curl -X GET 'https://api.integration.com/api/v1/data/export-all' \\
+  -H 'Content-Type: application/json' \\
+  -H 'Authorization: Bearer integ_export_token'`,
+    prodNormalizedResponse: generateLargeResponse("production", 2000),
+    integNormalizedResponse: generateLargeResponse("integration", 2000),
+    prodIgnoredFields: ["exportTimestamp", "requestId"],
+    integIgnoredFields: ["exportTimestamp", "requestId"],
+    oldValue: generateLargeResponse("production", 2000),
+    newValue: generateLargeResponse("integration", 2000),
   },
 ];
 
